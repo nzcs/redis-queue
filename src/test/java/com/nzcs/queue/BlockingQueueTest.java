@@ -29,10 +29,10 @@ public class BlockingQueueTest {
     @Test
     public void test() throws InterruptedException {
 
-        service.put("a", "aaa");
-        service.put("a", "aaa_x");
         service.put("b", "bbb");
         service.put("b", "bbb_x");
+        service.put("a", "aaa_y");
+        service.put("a", "aaa_a");
         service.put("c", "ccc");
         service.put("c", "ccc_x");
         service.put("d", "ddd");

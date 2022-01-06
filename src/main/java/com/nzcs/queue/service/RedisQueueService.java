@@ -31,7 +31,7 @@ public class RedisQueueService implements InitializingBean {
     }
 
     private void subscription(String sign) {
-        RBlockingQueue<Object> queue = redisson.getPriorityBlockingQueue(QUEUE);
+        RBlockingQueue<Object> queue = redisson.getBlockingQueue(QUEUE);
 
         queue.subscribeOnElements(value -> {
             Thread.currentThread().setName(sign + "_" + Thread.currentThread().getId());
@@ -48,7 +48,7 @@ public class RedisQueueService implements InitializingBean {
 
             lockService.unLock(id);
 
-            System.out.printf("End(%s) %s%n", sign, Thread.currentThread().getId());
+            System.out.printf("End(%s) %s: %s%n", sign, Thread.currentThread().getId(), value);
         });
     }
 }
