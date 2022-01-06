@@ -18,7 +18,7 @@ public class RedisQueueService implements InitializingBean {
     public void put(String key, Object value) {
         RBatch batch = redisson.createBatch(BatchOptions.defaults());
         batch.getBucket(key).setAsync(value);
-        batch.getBlockingQueue(QUEUE).putAsync(value);
+        batch.getQueue(QUEUE).addAsync(value);
         batch.execute();
     }
 
@@ -31,7 +31,7 @@ public class RedisQueueService implements InitializingBean {
     }
 
     private void subscription(String sign) {
-        RBlockingQueue<Object> queue = redisson.getBlockingQueue(QUEUE);
+        RBlockingQueue<Object> queue = redisson.getPriorityBlockingQueue(QUEUE);
 
         queue.subscribeOnElements(value -> {
             Thread.currentThread().setName(sign + "_" + Thread.currentThread().getId());
