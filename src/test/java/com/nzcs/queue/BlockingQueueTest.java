@@ -1,11 +1,16 @@
 package com.nzcs.queue;
 
 import com.nzcs.queue.service.RedisQueueService;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
+
+import java.util.concurrent.TimeUnit;
+
+import static com.nzcs.queue.service.RedisQueueService.dummyStore;
 
 
 public class BlockingQueueTest {
@@ -27,7 +32,7 @@ public class BlockingQueueTest {
 
 
     @Test
-    public void test() throws InterruptedException {
+    public void test() {
 
         service.put("b", "bbb");
         service.put("b", "bbb_x");
@@ -38,6 +43,6 @@ public class BlockingQueueTest {
         service.put("d", "ddd");
         service.put("d", "ddd_x");
 
-        Thread.sleep(5000);
+        Awaitility.waitAtMost(30, TimeUnit.SECONDS).until(() -> dummyStore.size() == 8);
     }
 }
