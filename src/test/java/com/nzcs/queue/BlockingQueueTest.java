@@ -6,10 +6,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.redisson.Redisson;
+import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RedissonClient;
 
 import java.util.concurrent.TimeUnit;
 
+import static com.nzcs.queue.service.RedisQueueService.QUEUE;
 import static com.nzcs.queue.service.RedisQueueService.dummyStore;
 
 
@@ -33,16 +35,20 @@ public class BlockingQueueTest {
 
     @Test
     public void test() {
+        RBlockingQueue<Object> queue = redisson.getBlockingDeque(QUEUE);
 
         service.put("b", "bbb");
         service.put("b", "bbb_x");
-        service.put("a", "aaa_y");
-        service.put("a", "aaa_a");
+        service.put("a", "aaa");
+        service.put("a", "aaa_x");
         service.put("c", "ccc");
         service.put("c", "ccc_x");
         service.put("d", "ddd");
         service.put("d", "ddd_x");
 
-        Awaitility.waitAtMost(30, TimeUnit.SECONDS).until(() -> dummyStore.size() == 8);
+
+        Awaitility
+                .waitAtMost(30, TimeUnit.SECONDS)
+                .until(() -> dummyStore.size() == 80);
     }
 }

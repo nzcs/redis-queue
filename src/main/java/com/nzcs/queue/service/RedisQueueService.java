@@ -8,6 +8,7 @@ import org.redisson.api.RDelayedQueue;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.InitializingBean;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -39,52 +40,35 @@ public class RedisQueueService implements InitializingBean {
 
     private void subscription(String sign) {
         RBlockingQueue<Object> queue = redisson.getBlockingDeque(QUEUE);
-
-        RBlockingQueue<Object> failedQueue = redisson.getBlockingDeque(QUEUE);
-        RDelayedQueue<Object> delayedQueue = redisson.getDelayedQueue(failedQueue);
+        RDelayedQueue<Object> delayedQueue = redisson.getDelayedQueue(queue);
 
         queue.subscribeOnElements(value -> {
             Thread.currentThread().setName(sign + "_" + Thread.currentThread().getId());
             String id = value.toString().substring(0, 3);
-            lockService.lock(id);
 
-            System.out.printf("Start(%s) %s: %s%n", sign, Thread.currentThread().getId(), value);
+            if (!lockService.lock(id)) {
+//                System.out.printf("Again(%s) %s: %s%n", sign, Thread.currentThread().getId(), value);
+                delayedQueue.offerAsync(value, 300, TimeUnit.MILLISECONDS);
 
-            delayedQueue.offer(value, 600, TimeUnit.MILLISECONDS);
+            } else {
+                System.out.printf("Start(%s) %s: %s%n", sign, Thread.currentThread().getId(), value);
+                delayedQueue.offerAsync(value, 300, TimeUnit.MILLISECONDS);
 
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                try {
+                    Thread.sleep(1000);
+                    dummyStore.add(value);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                delayedQueue.removeAll(Collections.singleton(value));
+                queue.removeAll(Collections.singleton(value));
+//                System.out.printf("Remove(%s) %s: %s%n", sign, queue.removeAll(Collections.singleton(value)), value);
+                lockService.unLock(id);
+
+                System.out.printf("End(%s) %s: %s%n", sign, Thread.currentThread().getId(), value);
             }
-
-            dummyStore.add(value);
-
-            delayedQueue.remove(value);
-            lockService.unLock(id);
-
-            System.out.printf("End(%s) %s: %s%n", sign, Thread.currentThread().getId(), value);
         });
 
-
-        failedQueue.subscribeOnElements(value -> {
-            Thread.currentThread().setName(sign + "_" + Thread.currentThread().getId());
-            String id = value.toString().substring(0, 3);
-            lockService.lock(id);
-
-            System.out.printf("Start(%s) %s: %s%n", sign, Thread.currentThread().getId(), value);
-
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            dummyStore.add(value);
-
-            lockService.unLock(id);
-
-            System.out.printf("End(%s) %s: %s%n", sign, Thread.currentThread().getId(), value);
-        });
     }
 }
